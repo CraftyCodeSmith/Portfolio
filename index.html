@@ -7,39 +7,52 @@
     <!-- Load Tailwind CSS for utility classes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom Terminal CSS */
+        /* Custom Terminal CSS (Variables set by JS theme function) */
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
         
         :root {
-            --terminal-bg: #1e1e1e;
-            --terminal-fg: #00ff00; /* Bright Green */
-            --terminal-accent: #00ffff; /* Cyan/Aqua */
-            --terminal-error: #ff5555; /* Red */
+            /* Default variables (Dracula) - these are overwritten by JS on load */
+            --terminal-bg: #282a36; 
+            --page-bg: #21222c; 
+            --terminal-fg: #f8f8f2; 
+            --terminal-accent-links: #bd93f9; 
+            --terminal-accent-prompt: #50fa7b; 
+            --terminal-accent-command: #ff79c6; 
+            --terminal-error: #ff5555; 
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Ensure body takes full viewport height */
+            overflow: hidden; /* Prevent body scrollbars */
         }
 
         body {
-            background-color: #0d1117; /* GitHub dark mode background */
+            /* Uses the dynamic background variable */
+            background-color: var(--page-bg); 
             display: flex;
-            justify-content: center;
+            justify-content: flex-start; /* Aligned to top-left */
             align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem 0;
             font-family: 'Fira Code', monospace;
             color: var(--terminal-fg);
+            transition: background-color 0.5s ease; /* Smooth theme transition */
         }
 
         #terminal {
-            width: 95%;
-            max-width: 1000px;
-            min-height: 60vh;
+            width: 100vw; /* Full viewport width */
+            height: 100vh; /* Full viewport height */
+            max-width: none; /* Override floating center limit */
+            min-height: 100vh;
             background-color: var(--terminal-bg);
-            border: 1px solid var(--terminal-fg);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-            padding: 1rem;
-            border-radius: 8px;
+            border: none; /* Removed border */
+            box-shadow: none; /* Removed shadow for full-screen feel */
+            padding: 1rem; /* Padding for content inside the terminal */
+            border-radius: 0; /* Removed rounded corners */
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: all 0.5s ease; /* Smooth theme transition */
         }
 
         #output {
@@ -51,11 +64,12 @@
             line-height: 1.5;
         }
         
+        /* Consistent scrollbar styling */
         #output::-webkit-scrollbar {
             width: 8px;
         }
         #output::-webkit-scrollbar-thumb {
-            background-color: var(--terminal-fg);
+            background-color: var(--terminal-accent-links);
             border-radius: 4px;
         }
         #output::-webkit-scrollbar-track {
@@ -66,10 +80,11 @@
             display: flex;
             align-items: center;
             padding-top: 0.5rem;
+            flex-shrink: 0; /* Prevent the input line from shrinking */
         }
 
         .prompt {
-            color: var(--terminal-accent);
+            color: var(--terminal-accent-prompt); /* Dynamic prompt color */
             margin-right: 0.5rem;
             user-select: none;
             flex-shrink: 0;
@@ -85,6 +100,8 @@
             font-family: 'Fira Code', monospace;
             padding: 0;
             margin: 0;
+            /* Ensure input uses all available width */
+            min-width: 0; 
         }
 
         .output-line {
@@ -92,16 +109,16 @@
         }
         
         .output-line a {
-            color: var(--terminal-accent);
+            color: var(--terminal-accent-links); /* Dynamic links color */
             text-decoration: underline;
         }
 
         .output-line .command {
-            color: var(--terminal-accent);
+            color: var(--terminal-accent-command); /* Dynamic commands color */
         }
 
         .output-line .header {
-            color: var(--terminal-accent);
+            color: var(--terminal-accent-links); /* Dynamic headers color */
             font-weight: 600;
             margin-top: 10px;
             margin-bottom: 5px;
@@ -112,10 +129,21 @@
         .output-line .error {
             color: var(--terminal-error);
         }
+
+        /* Responsive adjustments for smaller screens (e.g., mobile) */
+        @media (max-width: 640px) {
+            #terminal {
+                font-size: 0.9rem; /* Slightly smaller font for mobile */
+                padding: 0.5rem;
+            }
+            .prompt {
+                margin-right: 0.25rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="terminal" class="rounded-lg">
+    <div id="terminal">
         <div id="output"></div>
         <div class="input-line">
             <span class="prompt">crafty@code:~$</span>
@@ -127,14 +155,68 @@
         const output = document.getElementById('output');
         const input = document.getElementById('commandInput');
         const promptString = 'crafty@code:~$';
-        const APP_ID = 'DamandeepSinghTerminalPortfolio'; // Unique ID for Firestore
+        const APP_ID = 'DamandeepSinghTerminalPortfolio'; 
 
+        // --- Theme Definitions (Expanded to 5) ---
+        const themes = {
+            dracula: {
+                '--terminal-bg': '#282a36',
+                '--page-bg': '#21222c', 
+                '--terminal-fg': '#f8f8f2',
+                '--terminal-accent-links': '#bd93f9',
+                '--terminal-accent-prompt': '#50fa7b',
+                '--terminal-accent-command': '#ff79c6',
+                '--terminal-error': '#ff5555'
+            },
+            solarized_light: {
+                '--terminal-bg': '#fdf6e3',
+                '--page-bg': '#eee8d5',
+                '--terminal-fg': '#586e75',
+                '--terminal-accent-links': '#268bd2',
+                '--terminal-accent-prompt': '#859900',
+                '--terminal-accent-command': '#6c71c4',
+                '--terminal-error': '#dc322f'
+            },
+            monokai: {
+                '--terminal-bg': '#272822',
+                '--page-bg': '#1e1e1e',
+                '--terminal-fg': '#f8f8f2',
+                '--terminal-accent-links': '#a6e22e', /* Green Links */
+                '--terminal-accent-prompt': '#f92672', /* Pink Prompt */
+                '--terminal-accent-command': '#fd971f', /* Orange Commands */
+                '--terminal-error': '#ff0000'
+            },
+            nord: {
+                '--terminal-bg': '#2e3440',
+                '--page-bg': '#242933',
+                '--terminal-fg': '#eceff4',
+                '--terminal-accent-links': '#88c0d0', /* Light Blue/Teal Links */
+                '--terminal-accent-prompt': '#a3be8c', /* Green Prompt */
+                '--terminal-accent-command': '#bf616a', /* Red Commands */
+                '--terminal-error': '#d08770'
+            },
+            github_dark: {
+                '--terminal-bg': '#0d1117',
+                '--page-bg': '#161b22',
+                '--terminal-fg': '#c9d1d9',
+                '--terminal-accent-links': '#58a6ff', /* Blue Links */
+                '--terminal-accent-prompt': '#7ee787', /* Bright Green Prompt */
+                '--terminal-accent-command': '#e3b341', /* Yellow Commands */
+                '--terminal-error': '#f85149'
+            }
+        };
+        let currentThemeName = 'dracula';
+        
+        // --- Command History Variables ---
+        let commandHistory = [];
+        let historyIndex = -1; 
+        
         // --- Data Model based on your Resume ---
         const portfolioData = {
             name: "Damandeep Singh",
             email: "official.damandeepsingh@gmail.com",
             phone: "+91-8295672741",
-            linkedin: "https://www.linkedin.com/in/damandeepsingh", // Assuming this is the correct format
+            linkedin: "https://www.linkedin.com/in/damandeepsingh",
             github: "https://github.com/CraftyCodeSmith",
             summary: "Experienced Software Developer specializing in authentication, RBAC, cloud DevOps, and dynamic enterprise-grade web applications. Proven ability to mentor and lead teams, delivering highly maintainable and scalable products for fast-paced businesses.",
             skills: [
@@ -165,7 +247,7 @@
                     status: "Aug 2024 – Present",
                     description: "Built a social platform enabling interest-based user connection, video calls, and real-time chat using WebRTC/WebSockets.",
                     stack: "React.js, Redux, TypeScript, Spring Boot, PostgreSQL",
-                    source: "Source Code (Link required)" // Placeholder, update if you have the public link
+                    source: "Source Code (Link required)"
                 }
             ],
             education: [
@@ -184,45 +266,47 @@
             output.scrollTop = output.scrollHeight;
         }
 
-        // Available Commands
-        const commands = {
-            help: {
-                description: "Display the list of available commands.",
-                execute: displayHelp
-            },
-            clear: {
-                description: "Clear the terminal screen.",
-                execute: clearTerminal
-            },
-            about: {
-                description: "Display a professional summary.",
-                execute: displayAbout
-            },
-            skills: {
-                description: "List core technologies and expertise.",
-                execute: displaySkills
-            },
-            projects: {
-                description: "Show key projects I've worked on.",
-                execute: displayProjects
-            },
-            work: {
-                description: "Detail my professional work history.",
-                execute: displayWork
-            },
-            contact: {
-                description: "Display contact information and links.",
-                execute: displayContact
-            }
-        };
-
         // --- Command Handlers ---
+        
+        function setTheme(themeName) {
+            const theme = themes[themeName];
+            if (!theme) {
+                appendLine(`<span class='error'>Error: Theme '${themeName}' not found.</span>`);
+                return;
+            }
+            
+            // Apply variables to the document root
+            const root = document.documentElement;
+            for (const [key, value] of Object.entries(theme)) {
+                root.style.setProperty(key, value);
+            }
+
+            currentThemeName = themeName;
+            localStorage.setItem('terminalTheme', themeName); // Persist theme setting
+            appendLine(`Theme set to: <span class='command'>${themeName}</span>`);
+        }
+
+        function displayThemes(args) {
+            if (args.length > 0) {
+                setTheme(args[0].toLowerCase());
+            } else {
+                appendLine("<span class='header'>Available Themes:</span>");
+                Object.keys(themes).forEach(name => {
+                    const status = name === currentThemeName ? " (<span class='command'>current</span>)" : "";
+                    appendLine(` $ <span class='command'>${name}</span>${status}`);
+                });
+                appendLine("");
+                appendLine(`Usage: <span class='command'>theme [name]</span> to switch themes. Example: <span class='command'>theme monokai</span>`);
+            }
+        }
 
         function displayHelp() {
             appendLine("<span class='header'>Available Commands:</span>");
             Object.keys(commands).forEach(cmd => {
                 appendLine(` <span class='command'>${cmd}</span> - ${commands[cmd].description}`);
             });
+            appendLine("");
+            appendLine("Also supports: Up/Down Arrows for command history.");
         }
 
         function clearTerminal() {
@@ -288,6 +372,43 @@
             appendLine("Feel free to connect. Use the links above to reach out.");
         }
         
+        // --- Available Commands ---
+
+        const commands = {
+            help: {
+                description: "Display the list of available commands.",
+                execute: displayHelp
+            },
+            clear: {
+                description: "Clear the terminal screen.",
+                execute: clearTerminal
+            },
+            about: {
+                description: "Display a professional summary.",
+                execute: displayAbout
+            },
+            skills: {
+                description: "List core technologies and expertise.",
+                execute: displaySkills
+            },
+            projects: {
+                description: "Show key projects I've worked on.",
+                execute: displayProjects
+            },
+            work: {
+                description: "Detail my professional work history.",
+                execute: displayWork
+            },
+            contact: {
+                description: "Display contact information and links.",
+                execute: displayContact
+            },
+            theme: {
+                description: "Switch color themes. Use 'theme [name]' or 'theme' to see options.",
+                execute: displayThemes
+            }
+        };
+
         // --- Core Terminal Logic ---
 
         function processCommand(command) {
@@ -304,46 +425,86 @@
             }
         }
 
-        function handleInput(event) {
-            if (event.key === 'Enter') {
-                const command = input.value.trim();
-                
-                // Add the user's command to the output log
-                appendLine(`${promptString} ${command}`, 'user-command');
+        function handleEnter(event) {
+            const command = input.value.trim();
+            
+            // Add the user's command to the output log
+            appendLine(`${promptString} ${command}`, 'user-command');
 
-                // Process the command
-                processCommand(command);
+            // Process the command
+            processCommand(command);
 
-                // Clear the input field and retain focus
-                input.value = '';
-                input.focus();
+            // Store successful command in history
+            if (command) {
+                // Only store if not a repeat of the most recent command
+                if (commandHistory[0] !== command) {
+                    commandHistory.unshift(command); // Add to the start
+                }
+                historyIndex = -1; // Reset index to "new command" state
+            }
+
+            // Clear the input field and retain focus
+            input.value = '';
+            input.focus();
+        }
+
+        function handleKeydown(event) {
+            // 1. Command History (Arrow Up/Down)
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (commandHistory.length === 0) return;
+
+                if (event.key === 'ArrowUp') {
+                    // Move index up (older command)
+                    historyIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+                } else if (event.key === 'ArrowDown') {
+                    // Move index down (newer command)
+                    historyIndex = Math.max(historyIndex - 1, -1);
+                }
+
+                input.value = historyIndex === -1 ? '' : commandHistory[historyIndex];
+                // Ensure cursor is at the end of the input field
+                setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
+            } 
+            // 2. Enter key handling
+            else if (event.key === 'Enter') {
+                handleEnter(event);
+            }
+            // 3. Tab prevention (keeps focus on the terminal)
+            else if (event.key === 'Tab') {
+                event.preventDefault();
             }
         }
 
         // --- Initialization ---
 
         function init() {
+            // Load and apply theme from localStorage, defaulting to 'dracula'
+            const savedTheme = localStorage.getItem('terminalTheme');
+            const themeToLoad = savedTheme && themes[savedTheme] ? savedTheme : 'dracula';
+            
+            // Set the theme without logging the message during initial load
+            const theme = themes[themeToLoad];
+            const root = document.documentElement;
+            for (const [key, value] of Object.entries(theme)) {
+                root.style.setProperty(key, value);
+            }
+            currentThemeName = themeToLoad;
+
             // Initial Welcome Message
             appendLine(`Welcome to the interactive portfolio of <span class='command'>${portfolioData.name}</span>.`);
-            appendLine(`Session ID: ${APP_ID.toLowerCase().replace(/[^a-z0-9]/g, '-')}`);
+            appendLine(`Current Theme: <span class='command'>${currentThemeName}</span>. Use '<span class='command'>theme</span>' to switch.`);
             appendLine(`--------------------------------------------------------------------------------`);
             appendLine(`Type '<span class='command'>help</span>' to see available commands.`);
             appendLine("--------------------------------------------------------------------------------");
             
             // Event listener for input
-            input.addEventListener('keydown', handleInput);
+            input.addEventListener('keydown', handleKeydown);
             input.focus();
         }
 
         // Start the application
         window.onload = init;
-        
-        // Disable tab key from leaving the input field
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-            }
-        });
     </script>
 </body>
 </html>
