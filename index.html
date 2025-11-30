@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Damandeep Singh // Terminal Portfolio</title>
+    <!-- Load Tailwind CSS for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Terminal CSS */
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap');
+        
+        :root {
+            --terminal-bg: #1e1e1e;
+            --terminal-fg: #00ff00; /* Bright Green */
+            --terminal-accent: #00ffff; /* Cyan/Aqua */
+            --terminal-error: #ff5555; /* Red */
+        }
+
+        body {
+            background-color: #0d1117; /* GitHub dark mode background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem 0;
+            font-family: 'Fira Code', monospace;
+            color: var(--terminal-fg);
+        }
+
+        #terminal {
+            width: 95%;
+            max-width: 1000px;
+            min-height: 60vh;
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--terminal-fg);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #output {
+            flex-grow: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+        
+        #output::-webkit-scrollbar {
+            width: 8px;
+        }
+        #output::-webkit-scrollbar-thumb {
+            background-color: var(--terminal-fg);
+            border-radius: 4px;
+        }
+        #output::-webkit-scrollbar-track {
+            background: var(--terminal-bg);
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            padding-top: 0.5rem;
+        }
+
+        .prompt {
+            color: var(--terminal-accent);
+            margin-right: 0.5rem;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        #commandInput {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--terminal-fg);
+            flex-grow: 1;
+            caret-color: var(--terminal-fg);
+            font-family: 'Fira Code', monospace;
+            padding: 0;
+            margin: 0;
+        }
+
+        .output-line {
+            padding: 2px 0;
+        }
+        
+        .output-line a {
+            color: var(--terminal-accent);
+            text-decoration: underline;
+        }
+
+        .output-line .command {
+            color: var(--terminal-accent);
+        }
+
+        .output-line .header {
+            color: var(--terminal-accent);
+            font-weight: 600;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            display: block;
+            text-decoration: underline;
+        }
+
+        .output-line .error {
+            color: var(--terminal-error);
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal" class="rounded-lg">
+        <div id="output"></div>
+        <div class="input-line">
+            <span class="prompt">crafty@code:~$</span>
+            <input type="text" id="commandInput" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const input = document.getElementById('commandInput');
+        const promptString = 'crafty@code:~$';
+        const APP_ID = 'DamandeepSinghTerminalPortfolio'; // Unique ID for Firestore
+
+        // --- Data Model based on your Resume ---
+        const portfolioData = {
+            name: "Damandeep Singh",
+            email: "official.damandeepsingh@gmail.com",
+            phone: "+91-8295672741",
+            linkedin: "https://www.linkedin.com/in/damandeepsingh", // Assuming this is the correct format
+            github: "https://github.com/CraftyCodeSmith",
+            summary: "Experienced Software Developer specializing in authentication, RBAC, cloud DevOps, and dynamic enterprise-grade web applications. Proven ability to mentor and lead teams, delivering highly maintainable and scalable products for fast-paced businesses.",
+            skills: [
+                "Next.js, React, Redux Toolkit, TypeScript, Jest (Frontend & Testing)",
+                "NestJS, Node.js, Sequelize, PostgreSQL (Backend & Database)",
+                "AWS (ECS, EC2, ECR, S3, SQS, CodePipeline) (Cloud & DevOps)",
+                "Authentication (JWT, Refresh Token flows), Authorization (Hierarchical RBAC)",
+                "Payments/APIs (Razorpay, WhatsApp API, eSSL biometric), DND Kit",
+                "Algorithms (Graph, Tree, DP, Arrays, Strings - 300+ solved problems)"
+            ],
+            experience: [
+                {
+                    title: "Software Developer",
+                    company: "Shaurya Software Private Limited",
+                    duration: "Mar 2024 – Present",
+                    description: [
+                        "Mentored and led a team of 12 developers, improving team productivity by 35%.",
+                        "Architected secure JWT-based authentication and hierarchical RBAC system.",
+                        "Migrated large React codebase to Next.js (CSR-only) with Redux Toolkit/RTK Query, boosting frontend performance by 40%.",
+                        "Engineered backend schema design and complex sorting/filtering APIs with NestJS/Sequelize.",
+                        "Led CI/CD pipeline development on AWS (CodeCommit, ECS, ECR, CodeDeploy, S3)."
+                    ]
+                }
+            ],
+            projects: [
+                {
+                    name: "FriendsNest",
+                    status: "Aug 2024 – Present",
+                    description: "Built a social platform enabling interest-based user connection, video calls, and real-time chat using WebRTC/WebSockets.",
+                    stack: "React.js, Redux, TypeScript, Spring Boot, PostgreSQL",
+                    source: "Source Code (Link required)" // Placeholder, update if you have the public link
+                }
+            ],
+            education: [
+                "M.Sc Computer Science, S.A Jain College, Ambala (2020–2022) | Grade: 84.3%"
+            ]
+        };
+        // --- End Data Model ---
+
+        // Helper function to append a line to the terminal output
+        function appendLine(content, className = '') {
+            const line = document.createElement('div');
+            line.className = 'output-line ' + className;
+            line.innerHTML = content;
+            output.appendChild(line);
+            // Auto-scroll to the bottom
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Available Commands
+        const commands = {
+            help: {
+                description: "Display the list of available commands.",
+                execute: displayHelp
+            },
+            clear: {
+                description: "Clear the terminal screen.",
+                execute: clearTerminal
+            },
+            about: {
+                description: "Display a professional summary.",
+                execute: displayAbout
+            },
+            skills: {
+                description: "List core technologies and expertise.",
+                execute: displaySkills
+            },
+            projects: {
+                description: "Show key projects I've worked on.",
+                execute: displayProjects
+            },
+            work: {
+                description: "Detail my professional work history.",
+                execute: displayWork
+            },
+            contact: {
+                description: "Display contact information and links.",
+                execute: displayContact
+            }
+        };
+
+        // --- Command Handlers ---
+
+        function displayHelp() {
+            appendLine("<span class='header'>Available Commands:</span>");
+            Object.keys(commands).forEach(cmd => {
+                appendLine(` <span class='command'>${cmd}</span> - ${commands[cmd].description}`);
+            });
+        }
+
+        function clearTerminal() {
+            output.innerHTML = '';
+        }
+        
+        function displayAbout() {
+            appendLine("<span class='header'>About Me:</span>");
+            appendLine(portfolioData.summary);
+            appendLine("");
+            appendLine(`Core Technologies: ${portfolioData.skills.slice(0, 3).join(' | ')}...`);
+            appendLine(`Run '<span class='command'>skills</span>' for a full list.`);
+        }
+
+        function displaySkills() {
+            appendLine("<span class='header'>Technical Skillset:</span>");
+            portfolioData.skills.forEach(skillSet => {
+                appendLine(` $ ${skillSet}`);
+            });
+            appendLine("");
+            appendLine("<span class='header'>DSA Focus:</span>");
+            appendLine(" Solved 300+ Data Structure and Algorithm questions covering graph, tree, recursion, dynamic programming, arrays, and strings on platforms including LeetCode, GeeksforGeeks, and Coding Ninjas.");
+        }
+
+        function displayProjects() {
+            appendLine("<span class='header'>Projects:</span>");
+            portfolioData.projects.forEach(p => {
+                appendLine(`> <span class='command'>${p.name}</span> <span style="color:var(--terminal-fg);">(Stack: ${p.stack})</span>`);
+                appendLine(`  Status: ${p.status}`);
+                appendLine(`  Description: ${p.description}`);
+                if (p.source) {
+                    appendLine(`  Source: <a href="https://github.com/CraftyCodeSmith" target="_blank">${p.source}</a>`);
+                }
+                appendLine("");
+            });
+            appendLine(`Find more on my GitHub: <a href="${portfolioData.github}" target="_blank">${portfolioData.github}</a>`);
+        }
+
+        function displayWork() {
+            appendLine("<span class='header'>Professional Experience:</span>");
+            portfolioData.experience.forEach(exp => {
+                appendLine(`[<span class='command'>${exp.title}</span>] @ ${exp.company}`);
+                appendLine(`  Duration: ${exp.duration}`);
+                exp.description.forEach(desc => {
+                    appendLine(`  * ${desc}`);
+                });
+                appendLine("");
+            });
+
+            appendLine("<span class='header'>Education:</span>");
+            portfolioData.education.forEach(edu => {
+                appendLine(` $ ${edu}`);
+            });
+        }
+        
+        function displayContact() {
+            appendLine("<span class='header'>Contact Information:</span>");
+            appendLine(`> Email: <a href="mailto:${portfolioData.email}">${portfolioData.email}</a>`);
+            appendLine(`> Phone: ${portfolioData.phone}`);
+            appendLine(`> LinkedIn: <a href="${portfolioData.linkedin}" target="_blank">View Profile</a>`);
+            appendLine(`> GitHub: <a href="${portfolioData.github}" target="_blank">${portfolioData.github}</a>`);
+            appendLine("");
+            appendLine("Feel free to connect. Use the links above to reach out.");
+        }
+        
+        // --- Core Terminal Logic ---
+
+        function processCommand(command) {
+            if (!command) return;
+
+            const commandParts = command.toLowerCase().trim().split(/\s+/);
+            const baseCommand = commandParts[0];
+
+            if (commands[baseCommand]) {
+                commands[baseCommand].execute(commandParts.slice(1));
+            } else {
+                appendLine(`<span class='error'>Error: Command not found: ${command}</span>`);
+                appendLine(`Type '<span class='command'>help</span>' for a list of available commands.`);
+            }
+        }
+
+        function handleInput(event) {
+            if (event.key === 'Enter') {
+                const command = input.value.trim();
+                
+                // Add the user's command to the output log
+                appendLine(`${promptString} ${command}`, 'user-command');
+
+                // Process the command
+                processCommand(command);
+
+                // Clear the input field and retain focus
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // --- Initialization ---
+
+        function init() {
+            // Initial Welcome Message
+            appendLine(`Welcome to the interactive portfolio of <span class='command'>${portfolioData.name}</span>.`);
+            appendLine(`Session ID: ${APP_ID.toLowerCase().replace(/[^a-z0-9]/g, '-')}`);
+            appendLine(`--------------------------------------------------------------------------------`);
+            appendLine(`Type '<span class='command'>help</span>' to see available commands.`);
+            appendLine("--------------------------------------------------------------------------------");
+            
+            // Event listener for input
+            input.addEventListener('keydown', handleInput);
+            input.focus();
+        }
+
+        // Start the application
+        window.onload = init;
+        
+        // Disable tab key from leaving the input field
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
